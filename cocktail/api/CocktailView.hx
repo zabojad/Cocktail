@@ -17,6 +17,7 @@ import cocktail.core.window.Window;
 import cocktail.port.Bindings;
 import cocktail.core.geom.GeomData;
 import cocktail.core.http.HTTPData;
+import cocktail.core.parser.DOMParser;
 import haxe.Http;
 import haxe.Resource;
 
@@ -134,8 +135,8 @@ class CocktailView
 			dispose();
 		}
 		
-		createDocument();
-		initDocument(document, html, url);
+		createDocument(html);
+		initDocument(document, url);
 	}
 	
 	/**
@@ -146,45 +147,63 @@ class CocktailView
 	 * @param	baseUrl an optionnal url to use as the base
 	 * url for the document, else the loaded url is used instead
 	 */
-	public function loadURL(url:String, baseUrl:String = null):Void
+	public function loadURL(url:String, baseUrl:String = null, ?onSuccess:Void->Void):Void
 	{
 		if (document != null)
 		{
 			dispose();
 		}
-		
+
 		//use default url as base base url
 		if (baseUrl == null)
 		{
 			baseUrl = url;
 		}
-		
-		//init document and window
-		createDocument();
-		
+
 		//first try to retrieve html from embedded
 		//resource
 		var res = Resource.getString(url);
 		if (res != null)
 		{
-			initDocument(document, res, baseUrl);
+
+			//init document and window
+			createDocument(res);
+
+			initDocument(document, baseUrl);
+
+			if (onSuccess != null) {
+
+				onSuccess();
+			}
 			return;
 		}
-		
+
 		//then try to load over network
-		var nativeHttp:NativeHttp = new NativeHttp(document.timer);
-		
-		var onHTMLLoaded = function (e) {
-			initDocument(document, nativeHttp.response, baseUrl);
+		var nativeHttp : haxe.Http = new haxe.Http(url); // : NativeHttp = new NativeHttp(document.timer); // FIXME
+
+		var onHTMLLoaded = function (data) {
+
+			createDocument(data);
+
+			initDocument(document, baseUrl);
+
+			if (onSuccess != null) {
+				
+				onSuccess();
+			}
 		}
 		
 		var onLoadError = function(e) {
 			throw "could not load " + url;
 		}
-		
+		nativeHttp.onData = onHTMLLoaded;
+		nativeHttp.onError = onLoadError;
+		nativeHttp.request(false);
+/*
 		nativeHttp.addEventListener(EventConstants.LOAD, onHTMLLoaded);
 		nativeHttp.addEventListener(EventConstants.ERROR, onLoadError);
 		nativeHttp.load(url, HTTPConstants.GET, null, null, DataFormatValue.TEXT);
+*/
 	}
 	
 	/**
@@ -216,11 +235,12 @@ class CocktailView
 	/**
 	 * actually create the document
 	 */
-	private function createDocument():Void
+	private function createDocument(?html:String):Void
 	{
 		_platform = initPlatform();
 		
-		document = new HTMLDocument();
+		document = html != null ? cast DOMParser.parse(html) : new HTMLDocument();
+
 		window = new Window(document);
 		updateViewport(viewport);
 	}
@@ -242,7 +262,7 @@ class CocktailView
 	/**
 	 * init the document with the provided html, url and viewport
 	 */
-	private function initDocument(htmlDocument:HTMLDocument, html:String, url:String):Void
+	private function initDocument(htmlDocument:HTMLDocument, url:String):Void
 	{
 		setDocumentBindings(document);
 		setPlatformBindings(_platform, document);
@@ -251,12 +271,6 @@ class CocktailView
 		{
 			//set base url of document
 			htmlDocument.location.href = url;
-		}
-		
-		if (html != null)
-		{
-			//starts the loading of the document
-			htmlDocument.innerHTML = html;
 		}
 	}
 	

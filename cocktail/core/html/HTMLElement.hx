@@ -14,7 +14,9 @@ import cocktail.core.css.InitialStyleDeclaration;
 import cocktail.core.css.parsers.CSSSelectorParser;
 import cocktail.core.dom.Attr;
 import cocktail.core.dom.Document;
+import cocktail.core.dom.DocumentFragment;
 import cocktail.core.dom.DOMConstants;
+import cocktail.core.dom.DOMInternals;
 import cocktail.core.dom.DOMException;
 import cocktail.core.dom.Element;
 import cocktail.core.dom.NamedNodeMap;
@@ -48,6 +50,7 @@ import cocktail.core.css.CSSData;
 import cocktail.core.parser.ParserData;
 import cocktail.core.font.FontData;
 
+import cocktail.core.parser.HTMLParser;
 /**
  * All HTML element interfaces derive from this class.
  * Elements that only expose the HTML core attributes are represented 
@@ -2161,40 +2164,13 @@ class HTMLElement extends Element
 	 * 
 	 * @param	value an HTML String 
 	 */
-	private function set_innerHTML(value:String):String
+	private function set_innerHTML(markup:String):String
 	{
-		var childLength:Int = childNodes.length;
-		for (i in 0...childLength)
-		{
-			removeChild(childNodes[0]);	
-		}
+		var fe : DocumentFragment = cocktail.core.parser.DOMParser.parseFragment(markup, this);
 
-		//wrap the HTML String in a div element, else
-		//when creating the html node, only the first 
-		//node content is deserialized and not its
-		//siblings
-		var wrappedHTML:String = HTMLConstants.HTML_TOKEN_LESS_THAN + HTMLConstants.HTML_DIV_TAG_NAME + HTMLConstants.HTML_TOKEN_MORE_THAN;
-		wrappedHTML += value;
-		wrappedHTML += HTMLConstants.HTML_TOKEN_LESS_THAN + HTMLConstants.HTML_TOKEN_SOLIDUS + HTMLConstants.HTML_DIV_TAG_NAME + HTMLConstants.HTML_TOKEN_MORE_THAN;
-		
-		//parse the html string into a node object
-		var node:Node = DOMParser.parse(wrappedHTML, ownerDocument);
+		DOMInternals.replaceAll(fe, this);
 
-		//the returned node might be null for instance, if 
-		//only an empty string was provided
-		if (node == null)
-		{
-			return value;
-		}
-		
-		//append all children of the generated node
-		var length:Int = node.childNodes.length;
-		for (i in 0...length)
-		{
-			appendChild(node.childNodes[0]);
-		}
-		
-		return value;
+		return markup;
 	}
 
 	/**
@@ -2204,22 +2180,39 @@ class HTMLElement extends Element
 	 * 
 	 * @param	value an HTML String 
 	 */
-	private function set_outerHTML(value:String):String
-	{
-		//parse the html string into a node object
-		var node:Node = DOMParser.parse(value, ownerDocument);
+	private function set_outerHTML(markup : String) : String {
 
-		var oldNextSibling:HTMLElement = cast(this.nextSibling);
-		parentNode.removeChild(cast(this));
+		// Let parent be the context object's parent.
+		var parent : Node = parentNode;
 
-		if (node == null)
-		{
-			return value;
+		// If parent is null, terminate these steps. There would be no way to obtain a reference 
+		// to the nodes created even if the remaining steps were run.
+		if (parent == null) {
+			trace("Aborting set_outerHTML as parent is null");
+			return null;
 		}
 
-		parentNode.insertBefore( node, oldNextSibling );
+		// If parent is a Document, throw a NoModificationAllowedError exception and terminate these steps.
+		if (parent.nodeType == DOMConstants.DOCUMENT_NODE) {
 
-		return value;
+			throw "NoModificationAllowedError";
+		}
+
+		// If parent is a DocumentFragment, let parent be a new Element with
+		if (parent.nodeType == DOMConstants.DOCUMENT_FRAGMENT_NODE) {
+
+			//parent = new Element(DOMInternals.HTML_BODY_ELEMENT_TAGNAME, DOMInternals.HTML_NAMESPACE);
+			parent = new HTMLBodyElement();
+			DOMInternals.adopt(parent, ownerDocument);
+		}
+		// Let fragment be the result of invoking the fragment parsing algorithm with the new value as 
+		// markup, and parent as the context element.
+		var fragment : DocumentFragment = cocktail.core.parser.DOMParser.parseFragment(markup, cast parent);
+
+		// Replace the context object with fragment within the context object's parent.
+		DOMInternals.replace(this, fragment, parent);
+
+		return markup;
 	}
 
 	/**
@@ -2228,14 +2221,7 @@ class HTMLElement extends Element
 	 */
 	private function get_innerHTML():String
 	{
-		//serialise this node into an HTML string
-		var str:String = DOMParser.serialize(this);
-		
-		//remove the first and last tag, as they correspond to this HTMLElement
-		//tag which should not be returned as its inner html
-		str = str.substr(str.indexOf(HTMLConstants.HTML_TOKEN_MORE_THAN) + 1 , str.lastIndexOf(HTMLConstants.HTML_TOKEN_LESS_THAN) - str.indexOf(HTMLConstants.HTML_TOKEN_MORE_THAN) - 1);
-		
-		return str;
+		return cocktail.core.parser.HTMLSerializer.serialize(this);
 	}
 	
 	/**
@@ -2244,10 +2230,9 @@ class HTMLElement extends Element
 	 */
 	private function get_outerHTML():String
 	{
-		//serialise this node into an HTML string
-		var str:String = DOMParser.serialize(this);
-		
-		return str;
+		var fictionalNode : Node = cast { childNodes: [this] };
+
+		return cocktail.core.parser.HTMLSerializer.serialize(fictionalNode);
 	}
 	
 	/**

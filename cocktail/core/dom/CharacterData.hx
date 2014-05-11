@@ -32,6 +32,9 @@ class CharacterData extends Node
 	 * to retrieve the data in appropriately sized pieces
 	 */
 	public var data:String;
+
+	//readonly attribute unsigned long   length;
+	public var length( get, never ) : Int;
 	
 	/**
 	 * class constructor
@@ -53,5 +56,19 @@ class CharacterData extends Node
 	override private function set_nodeValue(value:String):String 
 	{
 		return data = value;
+	}
+
+	public function get_length() : Int
+	{
+		return data.length;
+	}
+
+	///
+	// API
+	//
+
+	public function appendData( arg : DOMString ) : Void
+	{
+		DOMInternals.replaceData( this, length, 0, arg );
 	}
 }

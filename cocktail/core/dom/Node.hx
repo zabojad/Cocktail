@@ -38,6 +38,8 @@ class Node extends EventCallback
 	 * to the tree, or if it has been removed from the tree, this is null.
 	 */
 	public var parentNode:Node;
+
+	public var parentElement( get, null ) : Null<Element>;
 	
 	/**
 	 * A NodeList that contains all children of this node. 
@@ -117,7 +119,7 @@ class Node extends EventCallback
 	 * 
 	 * TODO : implement setting
 	 */
-	public var textContent(get_textContent, null):String;
+	public var textContent(get, set):String;
 	
 	/**
 	 * class constructor
@@ -369,6 +371,11 @@ class Node extends EventCallback
 	//////////////////////////////////////////////////////////////////////////////////////////
 	// SETTERS/GETTERS
 	//////////////////////////////////////////////////////////////////////////////////////////
+
+	public function get_parentElement() : Null<Element>
+	{
+		return ( parentNode != null && parentNode.nodeType != DOMConstants.ELEMENT_NODE ) ? null : cast parentNode;
+	}
 	
 	private function get_firstChild():Node
 	{
@@ -482,6 +489,12 @@ class Node extends EventCallback
 	
 	private function get_textContent():String
 	{
+		return null;
+	}
+
+	public function set_textContent( nv : DOMString ) : Null<DOMString>
+	{
+		// not yet implemented
 		return null;
 	}
 }

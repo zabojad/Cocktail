@@ -41,7 +41,17 @@ class Document extends Node
 	 * TODO IMPORTANT : this attribute is supposed to return an
 	 * Element but it has to be an HTMLElement to match the Haxe JS API
 	 */
-	public var documentElement(default, null):HTMLElement;
+	public var documentElement(get, null):HTMLElement;
+
+	public var implementation( default, default ) : DOMImplementation;
+
+	public var URL( default, default ) : DOMString;
+
+	public var readyState( default, default ) : String;
+
+	public var contentType( default, default ) : DOMString;
+
+	public var doctype( default, default ) : DocumentType;
 	
 	/**
 	 * class constructor
@@ -279,6 +289,22 @@ class Document extends Node
 	//////////////////////////////////////////////////////////////////////////////////////////
 	// OVERRIDEN SETTERS/GETTERS
 	//////////////////////////////////////////////////////////////////////////////////////////
+
+	public function get_documentElement() : HTMLElement {
+
+		for (c in childNodes) {
+
+			switch(c.nodeType) {
+
+				case DOMConstants.ELEMENT_NODE:
+
+					return cast c;
+
+				default: // nothing
+			}
+		}
+		return null; // that's bad !
+	}
 	
 	override private function get_nodeType():Int
 	{

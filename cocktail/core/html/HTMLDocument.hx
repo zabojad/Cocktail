@@ -331,13 +331,6 @@ class HTMLDocument extends Document
 	 */
 	public var location(default, null):Location;
 	
-   /**  	
-	* getter/setter to set the whole document content with an  	
-	* html string or to serialise the whole document into
-	* an html string  	
-   */ 	
-	public var innerHTML(get_innerHTML, set_innerHTML):String;
-	
 	/**
 	 * A reference to the window of the document or null
 	 * if there are none
@@ -878,39 +871,6 @@ class HTMLDocument extends Document
 		_matchedPseudoClasses.fullscreen = fullscreen;
 		
 		return _matchedPseudoClasses;
-	}
-	
-	//////////////////////////////////////////////////////////////////////////////////////////
-	// DOM PARSER GETTER/SETTER AND METHODS
-	//////////////////////////////////////////////////////////////////////////////////////////
-  
-	/**
-	 * parse the string representing the
-	 * whole document. The returned node
-	 * is the root of the html document
-	 */
-	private function set_innerHTML(value:String):String
-	{
-		//parse the html string into a node object
-		var node:HTMLElement = cast(DOMParser.parse(value, this));
-		
-		initDocumentElement(cast(node));
-		initBody(cast(node.getElementsByTagName(HTMLConstants.HTML_BODY_TAG_NAME)[0]));
-		
-		//check if document can dispatch load event instantly,
-		//if no element is delaying the load of the document
-		checkifDocumentLoaded();
-		
-		return value;
-	}
-
-   /**
-	* Return the serialized documentElement
-	* (the <HTML> element)
-	*/
-	private function get_innerHTML():String
-	{
-		return DOMParser.serialize(documentElement);
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////////////

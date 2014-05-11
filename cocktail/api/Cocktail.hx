@@ -33,16 +33,17 @@ class Cocktail
 		//use a cocktail view
 		var cocktailView = new CocktailView();
 		//load the html document
-		cocktailView.loadURL(url);
-		
-		#if (flash || openfl)
-		//for flash and openfl, attach to stage
-		flash.Lib.current.addChild(cocktailView.root);
-		#end
-		
-		//set static reference to the document and window,
-		//so that they can be accessed with cocktail.Browser.document
-		//and cocktail.Browser.window
-		cocktail.Browser.init(cocktailView.document, cocktailView.window);
+		cocktailView.loadURL(url, null, function(){
+trace("done = "+cocktailView.document.documentElement.innerHTML);
+				#if (flash || openfl)
+				//for flash and openfl, attach to stage
+				flash.Lib.current.addChild(cocktailView.root);
+				#end
+				
+				//set static reference to the document and window,
+				//so that they can be accessed with cocktail.Browser.document
+				//and cocktail.Browser.window
+				cocktail.Browser.init(cocktailView.document, cocktailView.window);			
+			});	
 	}
 }
